@@ -106,10 +106,12 @@ export default function Inventory() {
                 <TableRow key={ingredient.id} className="group">
                   <TableCell className="font-medium">
                     <div>
-                      <div>{ingredient.name}</div>
+                      <div className="text-lg font-semibold text-foreground">{ingredient.name}</div>
                       {packageInfo && (
-                        <div className="text-xs text-muted-foreground mt-0.5">
-                          {packageInfo}
+                        <div className="mt-1">
+                          <span className="inline-flex items-center px-2 py-1 rounded-md bg-primary/10 text-primary font-medium text-xs border border-primary/20 shadow-sm">
+                            {packageInfo}
+                          </span>
                         </div>
                       )}
                     </div>
