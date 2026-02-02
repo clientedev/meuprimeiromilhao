@@ -2,8 +2,10 @@ import { useIngredients, useProducts } from "@/hooks/use-inventory";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
 import { Package, AlertTriangle, TrendingUp, Pizza } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/hooks/use-auth";
 
 export default function Dashboard() {
+  const { user } = useAuth();
   const { data: ingredients } = useIngredients();
   const { data: products } = useProducts();
 

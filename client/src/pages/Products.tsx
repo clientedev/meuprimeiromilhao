@@ -4,8 +4,10 @@ import { Button } from "@/components/ui/button";
 import { Pizza, Trash2, ChefHat } from "lucide-react";
 import { type ProductWithIngredients } from "@shared/schema";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/hooks/use-auth";
 
 export default function Products() {
+  const { user } = useAuth();
   const { data: products, isLoading: isLoadingProducts } = useProducts();
   const { data: ingredients, isLoading: isLoadingIngredients } = useIngredients();
   const deleteMutation = useDeleteProduct();

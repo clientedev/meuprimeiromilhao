@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { insertIngredientSchema, insertProductSchema, ingredients, products } from './schema';
+import { insertIngredientSchema, insertProductSchema, ingredients, products, insertTenantSchema } from './schema';
 
 // ============================================
 // SHARED ERROR SCHEMAS
@@ -25,6 +25,44 @@ export const errorSchemas = {
 // API CONTRACT
 // ============================================
 export const api = {
+  auth: {
+    signup: {
+      method: 'POST' as const,
+      path: '/api/auth/signup',
+      input: insertTenantSchema,
+      responses: {
+        201: z.any(),
+        400: errorSchemas.validation,
+      }
+    },
+    login: {
+      method: 'POST' as const,
+      path: '/api/auth/login',
+      input: z.object({
+        email: z.string().email(),
+        password: z.string(),
+      }),
+      responses: {
+        200: z.any(),
+        401: z.object({ message: z.string() }),
+      }
+    },
+    me: {
+      method: 'GET' as const,
+      path: '/api/auth/me',
+      responses: {
+        200: z.any(),
+        401: z.object({ message: z.string() }),
+      }
+    },
+    logout: {
+      method: 'POST' as const,
+      path: '/api/auth/logout',
+      responses: {
+        200: z.object({ success: z.boolean() }),
+      }
+    }
+  },
   ingredients: {
     list: {
       method: 'GET' as const,
@@ -44,7 +82,7 @@ export const api = {
     create: {
       method: 'POST' as const,
       path: '/api/ingredients',
-      input: insertIngredientSchema,
+      input: insertIngredientSchema.omit({ tenantId: true }),
       responses: {
         201: z.custom<typeof ingredients.$inferSelect>(),
         400: errorSchemas.validation,
@@ -53,7 +91,7 @@ export const api = {
     update: {
       method: 'PUT' as const,
       path: '/api/ingredients/:id',
-      input: insertIngredientSchema.partial(),
+      input: insertIngredientSchema.omit({ tenantId: true }).partial(),
       responses: {
         200: z.custom<typeof ingredients.$inferSelect>(),
         400: errorSchemas.validation,
@@ -88,7 +126,7 @@ export const api = {
     create: {
       method: 'POST' as const,
       path: '/api/products',
-      input: insertProductSchema.extend({
+      input: insertProductSchema.omit({ tenantId: true }).extend({
         ingredients: z.array(z.object({
           ingredientId: z.number(),
           quantityRequired: z.number()
@@ -106,7 +144,7 @@ export const api = {
         204: z.void(),
         404: errorSchemas.notFound,
       },
-    }
+    },
   },
   sales: {
     create: {
