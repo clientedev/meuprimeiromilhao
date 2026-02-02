@@ -1,13 +1,28 @@
-import { pgTable, text, serial, integer } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, boolean } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
 // === TABLE DEFINITIONS ===
 
+// SaaS Tenants (Users/Companies)
+export const tenants = pgTable("tenants", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  email: text("email").notNull().unique(),
+  password: text("password").notNull(),
+  companyName: text("company_name").notNull(),
+  companyType: text("company_type").notNull(), // 'hamburger', 'pizza', 'restaurant'
+  primaryColor: text("primary_color").default("24 100% 50%"), // Orange default
+  logoUrl: text("logo_url"),
+  subscriptionActive: boolean("subscription_active").default(false),
+  isAdmin: boolean("is_admin").default(false),
+});
+
 // Ingredients (Raw materials in stock)
 export const ingredients = pgTable("ingredients", {
   id: serial("id").primaryKey(),
+  tenantId: integer("tenant_id").references(() => tenants.id),
   name: text("name").notNull(),
   quantity: integer("quantity").notNull().default(0), // Current stock level in base units (g, ml, un)
   unit: text("unit").notNull(), // 'g', 'ml', 'un'
@@ -20,6 +35,7 @@ export const ingredients = pgTable("ingredients", {
 // Products (Items for sale, e.g., Pizza)
 export const products = pgTable("products", {
   id: serial("id").primaryKey(),
+  tenantId: integer("tenant_id").references(() => tenants.id),
   name: text("name").notNull(),
   description: text("description"),
   price: integer("price").notNull(), // Stored in cents (R$)
@@ -36,12 +52,25 @@ export const productIngredients = pgTable("product_ingredients", {
 
 // === RELATIONS ===
 
-export const productsRelations = relations(products, ({ many }) => ({
-  ingredients: many(productIngredients),
+export const tenantsRelations = relations(tenants, ({ many }) => ({
+  ingredients: many(ingredients),
+  products: many(products),
 }));
 
-export const ingredientsRelations = relations(ingredients, ({ many }) => ({
+export const productsRelations = relations(products, ({ one, many }) => ({
+  ingredients: many(productIngredients),
+  tenant: one(tenants, {
+    fields: [products.tenantId],
+    references: [tenants.id],
+  }),
+}));
+
+export const ingredientsRelations = relations(ingredients, ({ one, many }) => ({
   usedIn: many(productIngredients),
+  tenant: one(tenants, {
+    fields: [ingredients.tenantId],
+    references: [tenants.id],
+  }),
 }));
 
 export const productIngredientsRelations = relations(productIngredients, ({ one }) => ({
@@ -57,11 +86,15 @@ export const productIngredientsRelations = relations(productIngredients, ({ one 
 
 // === BASE SCHEMAS ===
 
+export const insertTenantSchema = createInsertSchema(tenants).omit({ id: true });
 export const insertIngredientSchema = createInsertSchema(ingredients).omit({ id: true });
 export const insertProductSchema = createInsertSchema(products).omit({ id: true });
 export const insertProductIngredientSchema = createInsertSchema(productIngredients).omit({ id: true });
 
 // === EXPLICIT API CONTRACT TYPES ===
+
+export type Tenant = typeof tenants.$inferSelect;
+export type InsertTenant = z.infer<typeof insertTenantSchema>;
 
 export type Ingredient = typeof ingredients.$inferSelect;
 export type InsertIngredient = z.infer<typeof insertIngredientSchema>;
