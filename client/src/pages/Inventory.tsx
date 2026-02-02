@@ -18,6 +18,12 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Search, PackageOpen, AlertTriangle, RefreshCcw, Trash2, Edit2 } from "lucide-react";
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "@/components/ui/tabs";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
 
@@ -177,6 +183,7 @@ export default function Inventory() {
 
 function RestockDialog({ ingredient }: { ingredient: any }) {
   const [open, setOpen] = useState(false);
+  const [mode, setMode] = useState<"weight" | "package">("package");
   const [amount, setAmount] = useState<string>("");
   const updateMutation = useUpdateIngredient();
 
@@ -184,11 +191,15 @@ function RestockDialog({ ingredient }: { ingredient: any }) {
     const value = parseFloat(amount);
     if (isNaN(value)) return;
     
+    const quantityToAdd = mode === "package" ? value * ingredient.packageSize : value;
+    
     updateMutation.mutate(
-      { id: ingredient.id, quantity: ingredient.quantity + value },
+      { id: ingredient.id, quantity: ingredient.quantity + quantityToAdd },
       { onSuccess: () => { setOpen(false); setAmount(""); } }
     );
   };
+
+  const label = ingredient.packageLabel || "pacote";
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -197,27 +208,49 @@ function RestockDialog({ ingredient }: { ingredient: any }) {
           <RefreshCcw className="h-3 w-3 mr-2" /> Repor
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[300px]">
+      <DialogContent className="sm:max-w-[350px]">
         <DialogHeader>
           <DialogTitle>Repor {ingredient.name}</DialogTitle>
         </DialogHeader>
-        <div className="py-4 space-y-4">
-          <div className="flex items-center justify-between text-sm">
-             <span className="text-muted-foreground">Atual:</span>
-             <span className="font-bold">{ingredient.quantity} {ingredient.unit}</span>
+        <div className="py-4 space-y-6">
+          <div className="flex items-center justify-between text-sm bg-muted/50 p-3 rounded-lg">
+             <span className="text-muted-foreground">Estoque Atual:</span>
+             <span className="font-bold text-lg">{formatQuantity(ingredient.quantity, ingredient.unit)}</span>
           </div>
+
+          <Tabs value={mode} onValueChange={(v) => setMode(v as any)} className="w-full">
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="package">Por {label}</TabsTrigger>
+              <TabsTrigger value="weight">Por {ingredient.unit}</TabsTrigger>
+            </TabsList>
+          </Tabs>
+
           <div className="space-y-2">
-            <label className="text-sm font-medium">Adicionar Quantidade</label>
-            <Input 
-              type="number" 
-              placeholder="0" 
-              value={amount} 
-              onChange={(e) => setAmount(e.target.value)} 
-              autoFocus
-            />
+            <label className="text-sm font-medium">
+              {mode === "package" ? `Quantas ${label}s adicionar?` : `Quanto em ${ingredient.unit} adicionar?`}
+            </label>
+            <div className="flex items-center gap-2">
+              <Input 
+                type="number" 
+                placeholder="0" 
+                value={amount} 
+                onChange={(e) => setAmount(e.target.value)} 
+                autoFocus
+                className="text-lg"
+              />
+              <span className="text-muted-foreground font-medium">
+                {mode === "package" ? (ingredient.packageLabel || "un") : ingredient.unit}
+              </span>
+            </div>
+            {mode === "package" && amount && !isNaN(parseFloat(amount)) && (
+              <p className="text-xs text-muted-foreground">
+                Isso adicionará {formatQuantity(parseFloat(amount) * ingredient.packageSize, ingredient.unit)} ao estoque.
+              </p>
+            )}
           </div>
-          <Button onClick={handleUpdate} className="w-full btn-gradient" disabled={updateMutation.isPending}>
-            Confirmar
+
+          <Button onClick={handleUpdate} className="w-full btn-gradient h-11 text-base" disabled={updateMutation.isPending}>
+            Confirmar Reposição
           </Button>
         </div>
       </DialogContent>
