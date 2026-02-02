@@ -36,6 +36,7 @@ import { type Ingredient } from "@shared/schema";
 const formSchema = insertIngredientSchema.extend({
   quantity: z.coerce.number().min(0),
   packageSize: z.coerce.number().min(1),
+  packagePrice: z.coerce.number().min(0),
   minStockLevel: z.coerce.number().min(0),
 });
 
@@ -59,9 +60,17 @@ export function IngredientForm({ ingredient, trigger }: IngredientFormProps) {
       quantity: 0,
       packageSize: 1000,
       packageLabel: "pacote",
+      packagePrice: 0,
       minStockLevel: 10,
     },
   });
+
+  const packagePrice = form.watch("packagePrice") || 0;
+  const packageSize = form.watch("packageSize") || 1;
+  const unit = form.watch("unit");
+
+  const pricePerBaseUnit = (packagePrice / 100) / packageSize;
+  const pricePerKgL = pricePerBaseUnit * 1000;
 
   useEffect(() => {
     if (ingredient && open) {
@@ -71,6 +80,7 @@ export function IngredientForm({ ingredient, trigger }: IngredientFormProps) {
         quantity: ingredient.quantity,
         packageSize: ingredient.packageSize,
         packageLabel: ingredient.packageLabel,
+        packagePrice: ingredient.packagePrice || 0,
         minStockLevel: ingredient.minStockLevel ?? 10,
       });
     }
@@ -131,19 +141,6 @@ export function IngredientForm({ ingredient, trigger }: IngredientFormProps) {
             <div className="grid grid-cols-2 gap-4">
               <FormField
                 control={form.control}
-                name="quantity"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Quantidade Inicial</FormLabel>
-                    <FormControl>
-                      <Input type="number" placeholder="0" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
                 name="packageSize"
                 render={({ field }) => (
                   <FormItem>
@@ -155,7 +152,42 @@ export function IngredientForm({ ingredient, trigger }: IngredientFormProps) {
                   </FormItem>
                 )}
               />
+              <FormField
+                control={form.control}
+                name="packagePrice"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Preço do Pacote (R$)</FormLabel>
+                    <FormControl>
+                      <Input 
+                        type="number" 
+                        step="0.01" 
+                        placeholder="0,00" 
+                        {...field}
+                        onChange={(e) => field.onChange(Math.round(parseFloat(e.target.value) * 100) || 0)}
+                        value={field.value / 100}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
             </div>
+
+            {packagePrice > 0 && packageSize > 0 && (
+              <div className="p-3 bg-muted rounded-lg text-sm space-y-1">
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Preço por {unit}:</span>
+                  <span className="font-medium">R$ {pricePerBaseUnit.toLocaleString('pt-BR', { minimumFractionDigits: 4 })}</span>
+                </div>
+                {(unit === 'g' || unit === 'ml') && (
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Preço por {unit === 'g' ? 'kg' : 'L'}:</span>
+                    <span className="font-bold text-primary">R$ {pricePerKgL.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
+                  </div>
+                )}
+              </div>
+            )}
 
             <FormField
               control={form.control}

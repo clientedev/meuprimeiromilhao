@@ -2,6 +2,7 @@ import { useForm, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { insertProductSchema } from "@shared/schema";
 import { useIngredients, useCreateProduct } from "@/hooks/use-inventory";
+import { cn } from "@/lib/utils";
 import {
   Dialog,
   DialogContent,
@@ -62,6 +63,18 @@ export function ProductForm() {
     name: "ingredients"
   });
 
+  const selectedIngredients = form.watch("ingredients") || [];
+  const totalCost = selectedIngredients.reduce((sum, item) => {
+    const ingredient = ingredients?.find(i => i.id === Number(item.ingredientId));
+    if (!ingredient || !ingredient.packagePrice || !ingredient.packageSize) return sum;
+    const pricePerUnit = ingredient.packagePrice / ingredient.packageSize;
+    return sum + (pricePerUnit * item.quantityRequired);
+  }, 0);
+
+  const salePrice = form.watch("price") || 0;
+  const profit = salePrice - totalCost;
+  const margin = salePrice > 0 ? (profit / salePrice) * 100 : 0;
+
   function onSubmit(data: ProductFormValues) {
     mutate(data, {
       onSuccess: () => {
@@ -106,27 +119,40 @@ export function ProductForm() {
                   name="price"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Preço (R$)</FormLabel>
+                      <FormLabel>Preço de Venda (R$)</FormLabel>
                       <FormControl>
-                        <Input type="number" step="0.01" placeholder="0.00" {...field} />
+                        <Input 
+                          type="number" 
+                          step="0.01" 
+                          placeholder="0.00" 
+                          {...field}
+                          onChange={(e) => field.onChange(Math.round(parseFloat(e.target.value) * 100) || 0)}
+                          value={field.value / 100}
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
-                <FormField
-                  control={form.control}
-                  name="description"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Descrição Curta</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Ingredientes principais..." {...field} value={field.value || ''} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+              </div>
+
+              <div className="p-4 bg-muted rounded-xl space-y-2 border shadow-inner">
+                <div className="flex justify-between items-center text-sm">
+                  <span className="text-muted-foreground">Custo de Produção:</span>
+                  <span className="font-semibold text-foreground">R$ {(totalCost / 100).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
+                </div>
+                <div className="flex justify-between items-center text-sm border-t border-border/50 pt-2">
+                  <span className="text-muted-foreground">Lucro por Unidade:</span>
+                  <span className={cn("font-bold", profit > 0 ? "text-green-600" : "text-destructive")}>
+                    R$ {(profit / 100).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center text-xs">
+                  <span className="text-muted-foreground">Margem:</span>
+                  <span className={cn("px-1.5 py-0.5 rounded-md font-medium", profit > 0 ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300" : "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300")}>
+                    {margin.toFixed(1)}%
+                  </span>
+                </div>
               </div>
             </div>
 

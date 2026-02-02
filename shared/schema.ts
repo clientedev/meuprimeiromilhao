@@ -13,6 +13,7 @@ export const ingredients = pgTable("ingredients", {
   unit: text("unit").notNull(), // 'g', 'ml', 'un'
   packageSize: integer("package_size").notNull().default(1000), // Size of one package in base units
   packageLabel: text("package_label").notNull().default("pacote"), // 'pacote', 'caixa', 'garrafa', etc.
+  packagePrice: integer("package_price").notNull().default(0), // Price per package in cents
   minStockLevel: integer("min_stock_level").default(10), // Alert threshold
 });
 
