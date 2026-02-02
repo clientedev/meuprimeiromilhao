@@ -17,7 +17,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Search, PackageOpen, AlertTriangle, RefreshCcw, Trash2 } from "lucide-react";
+import { Search, PackageOpen, AlertTriangle, RefreshCcw, Trash2, Edit2 } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
 
@@ -137,6 +137,18 @@ export default function Inventory() {
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                       <RestockDialog ingredient={ingredient} />
+                      <IngredientForm 
+                        ingredient={ingredient} 
+                        trigger={
+                          <Button 
+                            variant="ghost" 
+                            size="icon"
+                            className="h-8 w-8 text-muted-foreground hover:text-primary"
+                          >
+                            <Edit2 className="h-4 w-4" />
+                          </Button>
+                        }
+                      />
                       <Button 
                         variant="ghost" 
                         size="icon"

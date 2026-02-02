@@ -126,8 +126,23 @@ export const api = {
 };
 
 // ============================================
-// REQUIRED: buildUrl helper
+// TYPE HELPERS — Infer types from schemas
 // ============================================
+export type CreateIngredientRequest = z.infer<typeof api.ingredients.create.input>;
+export type IngredientResponse = z.infer<typeof api.ingredients.create.responses[201]>;
+export type IngredientUpdateInput = z.infer<typeof api.ingredients.update.input>;
+export type IngredientsListResponse = z.infer<typeof api.ingredients.list.responses[200]>;
+
+export type CreateProductRequest = z.infer<typeof api.products.create.input>;
+export type ProductResponse = z.infer<typeof api.products.create.responses[201]>;
+
+export type SaleRequest = z.infer<typeof api.sales.create.input>;
+
+export type ValidationError = z.infer<typeof errorSchemas.validation>;
+export type NotFoundError = z.infer<typeof errorSchemas.notFound>;
+export type InternalError = z.infer<typeof errorSchemas.internal>;
+export type StockError = z.infer<typeof errorSchemas.stockError>;
+
 export function buildUrl(path: string, params?: Record<string, string | number>): string {
   let url = path;
   if (params) {

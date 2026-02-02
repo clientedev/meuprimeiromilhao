@@ -2,7 +2,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { insertIngredientSchema } from "@shared/schema";
 import { type CreateIngredientRequest } from "@shared/routes";
-import { useCreateIngredient } from "@/hooks/use-inventory";
+import { useCreateIngredient, useUpdateIngredient } from "@/hooks/use-inventory";
 import {
   Dialog,
   DialogContent,
@@ -27,9 +27,10 @@ import {
 } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Plus } from "lucide-react";
-import { useState } from "react";
+import { Plus, Edit2 } from "lucide-react";
+import { useState, useEffect } from "react";
 import { z } from "zod";
+import { type Ingredient } from "@shared/schema";
 
 // Create a coerced schema for form validation
 const formSchema = insertIngredientSchema.extend({
@@ -38,10 +39,18 @@ const formSchema = insertIngredientSchema.extend({
   minStockLevel: z.coerce.number().min(0),
 });
 
-export function IngredientForm() {
+interface IngredientFormProps {
+  ingredient?: Ingredient;
+  trigger?: React.ReactNode;
+}
+
+export function IngredientForm({ ingredient, trigger }: IngredientFormProps) {
   const [open, setOpen] = useState(false);
-  const { mutate, isPending } = useCreateIngredient();
+  const createMutation = useCreateIngredient();
+  const updateMutation = useUpdateIngredient();
   
+  const isEditing = !!ingredient;
+
   const form = useForm<CreateIngredientRequest>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -54,26 +63,54 @@ export function IngredientForm() {
     },
   });
 
+  useEffect(() => {
+    if (ingredient && open) {
+      form.reset({
+        name: ingredient.name,
+        unit: ingredient.unit,
+        quantity: ingredient.quantity,
+        packageSize: ingredient.packageSize,
+        packageLabel: ingredient.packageLabel,
+        minStockLevel: ingredient.minStockLevel ?? 10,
+      });
+    }
+  }, [ingredient, open, form]);
+
   function onSubmit(data: CreateIngredientRequest) {
-    mutate(data, {
-      onSuccess: () => {
-        setOpen(false);
-        form.reset();
-      },
-    });
+    if (isEditing && ingredient) {
+      updateMutation.mutate(
+        { id: ingredient.id, ...data },
+        {
+          onSuccess: () => {
+            setOpen(false);
+          },
+        }
+      );
+    } else {
+      createMutation.mutate(data, {
+        onSuccess: () => {
+          setOpen(false);
+          form.reset();
+        },
+      });
+    }
   }
+
+  const isPending = createMutation.isPending || updateMutation.isPending;
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button className="btn-gradient gap-2">
-          <Plus className="h-4 w-4" />
-          Novo Ingrediente
-        </Button>
+        {trigger || (
+          <Button className="btn-gradient gap-2">
+            <Plus className="h-4 w-4" />
+            Novo Ingrediente
+          </Button>
+        )}
       </DialogTrigger>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle>Adicionar Ingrediente</DialogTitle>
+          <DialogTitle>{isEditing ? "Editar Ingrediente" : "Adicionar Ingrediente"}</DialogTitle>
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 pt-4">
