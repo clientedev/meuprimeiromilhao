@@ -27,6 +27,7 @@ import { z } from "zod";
 // Create a coerced schema for form validation
 const formSchema = insertIngredientSchema.extend({
   quantity: z.coerce.number().min(0),
+  packageSize: z.coerce.number().min(1),
   minStockLevel: z.coerce.number().min(0),
 });
 
@@ -38,8 +39,9 @@ export function IngredientForm() {
     resolver: zodResolver(formSchema),
     defaultValues: {
       name: "",
-      unit: "un",
+      unit: "g",
       quantity: 0,
+      packageSize: 1000,
       minStockLevel: 10,
     },
   });
@@ -97,6 +99,22 @@ export function IngredientForm() {
               />
               <FormField
                 control={form.control}
+                name="packageSize"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Tamanho do Pacote</FormLabel>
+                    <FormControl>
+                      <Input type="number" placeholder="1000" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
                 name="unit"
                 render={({ field }) => (
                   <FormItem>
@@ -108,21 +126,20 @@ export function IngredientForm() {
                   </FormItem>
                 )}
               />
+              <FormField
+                control={form.control}
+                name="minStockLevel"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Estoque Mínimo (Alerta)</FormLabel>
+                    <FormControl>
+                      <Input type="number" placeholder="10" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
             </div>
-
-            <FormField
-              control={form.control}
-              name="minStockLevel"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Estoque Mínimo (Alerta)</FormLabel>
-                  <FormControl>
-                    <Input type="number" placeholder="10" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
 
             <Button type="submit" className="w-full btn-gradient" disabled={isPending}>
               {isPending ? "Salvando..." : "Salvar Ingrediente"}

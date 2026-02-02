@@ -26,6 +26,21 @@ export default function Inventory() {
   const [searchTerm, setSearchTerm] = useState("");
   const deleteMutation = useDeleteIngredient();
 
+  const formatQuantity = (qty: number, unit: string) => {
+    if (unit === "g" && qty >= 1000) return `${(qty / 1000).toFixed(2)}kg`;
+    if (unit === "ml" && qty >= 1000) return `${(qty / 1000).toFixed(2)}L`;
+    return `${qty}${unit}`;
+  };
+
+  const getPackageInfo = (ingredient: any) => {
+    if (ingredient.unit === "un") return null;
+    const fullPackages = Math.floor(ingredient.quantity / ingredient.packageSize);
+    const remaining = ingredient.quantity % ingredient.packageSize;
+    
+    if (fullPackages === 0) return `${formatQuantity(remaining, ingredient.unit)} no aberto`;
+    return `${fullPackages} pacotes fechados e ${formatQuantity(remaining, ingredient.unit)} no aberto`;
+  };
+
   const filteredIngredients = ingredients?.filter(i => 
     i.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
@@ -82,15 +97,25 @@ export default function Inventory() {
             )}
             {filteredIngredients?.map((ingredient) => {
               const isLowStock = ingredient.quantity <= (ingredient.minStockLevel || 0);
+              const packageInfo = getPackageInfo(ingredient);
               return (
                 <TableRow key={ingredient.id} className="group">
-                  <TableCell className="font-medium">{ingredient.name}</TableCell>
+                  <TableCell className="font-medium">
+                    <div>
+                      <div>{ingredient.name}</div>
+                      {packageInfo && (
+                        <div className="text-xs text-muted-foreground mt-0.5">
+                          {packageInfo}
+                        </div>
+                      )}
+                    </div>
+                  </TableCell>
                   <TableCell>
                     <span className={cn(
                       "font-bold font-mono text-lg",
                       isLowStock ? "text-destructive" : "text-green-600"
                     )}>
-                      {ingredient.quantity}
+                      {formatQuantity(ingredient.quantity, ingredient.unit)}
                     </span>
                   </TableCell>
                   <TableCell className="text-muted-foreground">{ingredient.unit}</TableCell>
