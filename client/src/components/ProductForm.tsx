@@ -134,6 +134,19 @@ export function ProductForm() {
                     </FormItem>
                   )}
                 />
+                <FormField
+                  control={form.control}
+                  name="description"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Descrição Curta</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Ingredientes principais..." {...field} value={field.value || ''} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
               </div>
 
               <div className="p-4 bg-muted rounded-xl space-y-2 border shadow-inner">

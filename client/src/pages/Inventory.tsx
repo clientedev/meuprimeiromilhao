@@ -2,6 +2,7 @@ import { useIngredients, useUpdateIngredient, useDeleteIngredient } from "@/hook
 import { IngredientForm } from "@/components/IngredientForm";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import {
   Table,
   TableBody,
@@ -88,8 +89,9 @@ export default function Inventory() {
           <TableHeader className="bg-muted/30">
             <TableRow>
               <TableHead className="w-[30%]">Nome</TableHead>
+              <TableHead>Tamanho</TableHead>
+              <TableHead>Preço (Pacote)</TableHead>
               <TableHead>Quantidade Atual</TableHead>
-              <TableHead>Unidade</TableHead>
               <TableHead>Status</TableHead>
               <TableHead className="text-right">Ações</TableHead>
             </TableRow>
@@ -97,7 +99,7 @@ export default function Inventory() {
           <TableBody>
             {filteredIngredients?.length === 0 && (
               <TableRow>
-                <TableCell colSpan={5} className="h-64 text-center">
+                <TableCell colSpan={6} className="h-64 text-center">
                   <div className="flex flex-col items-center justify-center text-muted-foreground">
                     <PackageOpen className="h-12 w-12 mb-4 opacity-50" />
                     <p>Nenhum ingrediente encontrado</p>
@@ -111,26 +113,33 @@ export default function Inventory() {
               return (
                 <TableRow key={ingredient.id} className="group">
                   <TableCell className="font-medium">
+                    <div className="text-lg font-semibold text-foreground">{ingredient.name}</div>
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant="outline" className="font-normal">
+                      {ingredient.packageSize}{ingredient.unit} / {ingredient.packageLabel}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="font-medium">
+                    R$ {((ingredient.packagePrice || 0) / 100).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                  </TableCell>
+                  <TableCell>
                     <div>
-                      <div className="text-lg font-semibold text-foreground">{ingredient.name}</div>
+                      <span className={cn(
+                        "font-bold font-mono text-lg block",
+                        isLowStock ? "text-destructive" : "text-green-600"
+                      )}>
+                        {formatQuantity(ingredient.quantity, ingredient.unit)}
+                      </span>
                       {packageInfo && (
-                        <div className="mt-1">
-                          <span className="inline-flex items-center px-2 py-1 rounded-md bg-primary/10 text-primary font-medium text-xs border border-primary/20 shadow-sm">
+                        <div className="mt-0.5">
+                          <span className="text-[10px] text-primary font-bold uppercase tracking-tighter">
                             {packageInfo}
                           </span>
                         </div>
                       )}
                     </div>
                   </TableCell>
-                  <TableCell>
-                    <span className={cn(
-                      "font-bold font-mono text-lg",
-                      isLowStock ? "text-destructive" : "text-green-600"
-                    )}>
-                      {formatQuantity(ingredient.quantity, ingredient.unit)}
-                    </span>
-                  </TableCell>
-                  <TableCell className="text-muted-foreground">{ingredient.unit}</TableCell>
                   <TableCell>
                     {isLowStock ? (
                       <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300">

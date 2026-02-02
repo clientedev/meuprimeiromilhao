@@ -19,6 +19,8 @@ export default function Dashboard() {
       min: i.minStockLevel
     }));
 
+  const totalStockValue = ingredients?.reduce((sum, i) => sum + ((i.packagePrice || 0) / 100) * (i.quantity / i.packageSize), 0) || 0;
+
   return (
     <div className="space-y-8">
       <div>
@@ -26,12 +28,18 @@ export default function Dashboard() {
         <p className="text-muted-foreground mt-1">Bem-vindo ao Estoque Vivo.</p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <StatCard 
           title="Total Produtos" 
           value={products?.length || 0} 
           icon={Pizza} 
           className="bg-gradient-to-br from-blue-500 to-indigo-600 text-white"
+        />
+        <StatCard 
+          title="Valor em Estoque" 
+          value={`R$ ${totalStockValue.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`} 
+          icon={TrendingUp} 
+          className="bg-gradient-to-br from-emerald-500 to-teal-600 text-white"
         />
         <StatCard 
           title="Total Ingredientes" 
