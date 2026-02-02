@@ -91,9 +91,9 @@ export async function registerRoutes(
   const existing = await storage.getIngredients();
   if (existing.length === 0) {
     console.log("Seeding database...");
-    const flour = await storage.createIngredient({ name: "Farinha de Trigo", quantity: 5000, unit: "g" });
-    const cheese = await storage.createIngredient({ name: "Queijo Mussarela", quantity: 2000, unit: "g" });
-    const tomato = await storage.createIngredient({ name: "Molho de Tomate", quantity: 1000, unit: "ml" });
+    const flour = await storage.createIngredient({ name: "Farinha de Trigo", quantity: 12000, unit: "g", packageSize: 5000 });
+    const cheese = await storage.createIngredient({ name: "Queijo Mussarela", quantity: 2000, unit: "g", packageSize: 1000 });
+    const tomato = await storage.createIngredient({ name: "Molho de Tomate", quantity: 1000, unit: "ml", packageSize: 500 });
 
     // Create Pizza Product
     await storage.createProduct({

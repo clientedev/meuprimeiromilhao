@@ -9,8 +9,9 @@ import { z } from "zod";
 export const ingredients = pgTable("ingredients", {
   id: serial("id").primaryKey(),
   name: text("name").notNull(),
-  quantity: integer("quantity").notNull().default(0), // Current stock level
-  unit: text("unit").notNull(), // e.g., 'grams', 'units', 'ml'
+  quantity: integer("quantity").notNull().default(0), // Current stock level in base units (g, ml, un)
+  unit: text("unit").notNull(), // 'g', 'ml', 'un'
+  packageSize: integer("package_size").notNull().default(1000), // Size of one package in base units
   minStockLevel: integer("min_stock_level").default(10), // Alert threshold
 });
 
@@ -26,7 +27,7 @@ export const products = pgTable("products", {
 // Recipe/Composition (Link between Product and Ingredients)
 export const productIngredients = pgTable("product_ingredients", {
   id: serial("id").primaryKey(),
-  productId: integer("product_id").notNull(), // Intentionally not using FK constraint in schema for simplicity in Lite mode, handled in app logic/relations
+  productId: integer("product_id").notNull(),
   ingredientId: integer("ingredient_id").notNull(),
   quantityRequired: integer("quantity_required").notNull(), // How much of the ingredient is used per 1 product
 });
