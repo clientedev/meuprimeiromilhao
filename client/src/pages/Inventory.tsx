@@ -36,9 +36,13 @@ export default function Inventory() {
     if (ingredient.unit === "un") return null;
     const fullPackages = Math.floor(ingredient.quantity / ingredient.packageSize);
     const remaining = ingredient.quantity % ingredient.packageSize;
+    const label = ingredient.packageLabel || "pacote";
+    const pluralLabel = label === "unidade" ? "unidades" : label + "s";
+    
+    const packageText = fullPackages === 1 ? `1 ${label}` : `${fullPackages} ${pluralLabel}`;
     
     if (fullPackages === 0) return `${formatQuantity(remaining, ingredient.unit)} no aberto`;
-    return `${fullPackages} pacotes fechados e ${formatQuantity(remaining, ingredient.unit)} no aberto`;
+    return `${packageText} fechados e ${formatQuantity(remaining, ingredient.unit)} no aberto`;
   };
 
   const filteredIngredients = ingredients?.filter(i => 

@@ -18,6 +18,13 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
@@ -42,6 +49,7 @@ export function IngredientForm() {
       unit: "g",
       quantity: 0,
       packageSize: 1000,
+      packageLabel: "pacote",
       minStockLevel: 10,
     },
   });
@@ -111,6 +119,31 @@ export function IngredientForm() {
                 )}
               />
             </div>
+
+            <FormField
+              control={form.control}
+              name="packageLabel"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Tipo de Embalagem</FormLabel>
+                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecione o tipo" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      <SelectItem value="pacote">Pacote</SelectItem>
+                      <SelectItem value="caixa">Caixa</SelectItem>
+                      <SelectItem value="garrafa">Garrafa</SelectItem>
+                      <SelectItem value="pote">Pote</SelectItem>
+                      <SelectItem value="unidade">Unidade</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
             <div className="grid grid-cols-2 gap-4">
               <FormField
