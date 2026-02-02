@@ -10,6 +10,8 @@ import { eq, sql, and } from "drizzle-orm";
 export interface IStorage {
   // Tenants
   getTenantByEmail(email: string): Promise<Tenant | undefined>;
+  getTenantById(id: number): Promise<Tenant | undefined>;
+  getAllTenants(): Promise<Tenant[]>;
   createTenant(tenant: InsertTenant): Promise<Tenant>;
   updateTenant(id: number, updates: Partial<InsertTenant>): Promise<Tenant>;
 
@@ -34,6 +36,15 @@ export class DatabaseStorage implements IStorage {
   async getTenantByEmail(email: string): Promise<Tenant | undefined> {
     const [tenant] = await db.select().from(tenants).where(eq(tenants.email, email));
     return tenant;
+  }
+
+  async getTenantById(id: number): Promise<Tenant | undefined> {
+    const [tenant] = await db.select().from(tenants).where(eq(tenants.id, id));
+    return tenant;
+  }
+
+  async getAllTenants(): Promise<Tenant[]> {
+    return await db.select().from(tenants).where(eq(tenants.isAdmin, false)).orderBy(tenants.companyName);
   }
 
   async createTenant(insertTenant: InsertTenant): Promise<Tenant> {

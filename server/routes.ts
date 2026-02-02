@@ -150,6 +150,45 @@ export async function registerRoutes(
     }
   });
 
+  // === ADMIN ROUTES ===
+  const requireAdmin = async (req: Request, res: Response, next: NextFunction) => {
+    if (!req.session.tenantId) {
+      return res.status(401).json({ message: "Não autorizado" });
+    }
+    const tenant = await storage.getTenantById(req.session.tenantId);
+    if (!tenant || !tenant.isAdmin) {
+      return res.status(403).json({ message: "Acesso negado. Requer privilégios de administrador." });
+    }
+    next();
+  };
+
+  app.post("/api/admin/login", async (req, res) => {
+    try {
+      const { email, password } = req.body;
+      const tenant = await storage.getTenantByEmail(email);
+      if (!tenant || tenant.password !== password) {
+        return res.status(401).json({ message: "Credenciais inválidas" });
+      }
+      if (!tenant.isAdmin) {
+        return res.status(403).json({ message: "Acesso negado. Não é administrador." });
+      }
+      req.session.tenantId = tenant.id;
+      res.json(tenant);
+    } catch (err) {
+      res.status(400).json({ message: "Dados inválidos" });
+    }
+  });
+
+  app.get("/api/admin/me", requireAdmin, async (req, res) => {
+    const tenant = await storage.getTenantById(req.session.tenantId!);
+    res.json(tenant);
+  });
+
+  app.get("/api/admin/tenants", requireAdmin, async (req, res) => {
+    const tenants = await storage.getAllTenants();
+    res.json(tenants);
+  });
+
   return httpServer;
 }
 
