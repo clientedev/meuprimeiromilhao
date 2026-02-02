@@ -144,7 +144,7 @@ export default function Inventory() {
                   </TableCell>
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <RestockDialog ingredient={ingredient} />
+                      <RestockDialog ingredient={ingredient} formatQuantity={formatQuantity} />
                       <IngredientForm 
                         ingredient={ingredient} 
                         trigger={
@@ -181,7 +181,7 @@ export default function Inventory() {
   );
 }
 
-function RestockDialog({ ingredient }: { ingredient: any }) {
+function RestockDialog({ ingredient, formatQuantity }: { ingredient: any, formatQuantity: (qty: number, unit: string) => string }) {
   const [open, setOpen] = useState(false);
   const [mode, setMode] = useState<"weight" | "package">("package");
   const [amount, setAmount] = useState<string>("");
