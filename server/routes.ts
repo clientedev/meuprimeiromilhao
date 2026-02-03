@@ -5,9 +5,14 @@ import { api } from "@shared/routes";
 import { z } from "zod";
 import session from "express-session";
 import MemoryStore from "memorystore";
-import { openai } from "@replit/ai-integrations";
+import OpenAI from "openai";
 
-// ... rest of imports ...
+const openai = new OpenAI({
+  apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY,
+  baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL,
+});
+
+const SessionStore = MemoryStore(session);
 
 export async function registerRoutes(
   httpServer: Server,

@@ -67,15 +67,19 @@ export default function Inventory() {
         const reader = new FileReader();
         reader.onload = async (e) => {
           const base64 = e.target?.result as string;
-          const res = await apiRequest("POST", "/api/ingredients/scan-nf", { image: base64 });
-          const result = await res.json();
-          
-          if (result.success && result.items.length > 0) {
-            toast({ title: "NF Escaneada", description: `Detectados ${result.items.length} itens. Importando...` });
-            await apiRequest("POST", "/api/ingredients/import", { items: result.items });
-            queryClient.invalidateQueries({ queryKey: ["/api/ingredients"] });
-          } else {
-            toast({ title: "Aviso", description: "Não foi possível extrair itens da imagem", variant: "destructive" });
+          try {
+            const res = await apiRequest("POST", "/api/ingredients/scan-nf", { image: base64 });
+            const result = await res.json();
+            
+            if (result.success && result.items.length > 0) {
+              toast({ title: "NF Escaneada", description: `Detectados ${result.items.length} itens. Importando...` });
+              await apiRequest("POST", "/api/ingredients/import", { items: result.items });
+              queryClient.invalidateQueries({ queryKey: ["/api/ingredients"] });
+            } else {
+              toast({ title: "Aviso", description: "Não foi possível extrair itens da imagem", variant: "destructive" });
+            }
+          } catch (err) {
+            toast({ title: "Erro", description: "Erro ao conectar com o servidor OCR", variant: "destructive" });
           }
         };
         reader.readAsDataURL(file);
@@ -96,7 +100,7 @@ export default function Inventory() {
             packageInfo: row["Informação da Embalagem (opcional)"],
             minStock: row["Estoque Mínimo (opcional)"] ? Number(row["Estoque Mínimo (opcional)"]) : undefined,
             currentPrice: row["Preço de Custo (opcional)"] ? Number(row["Preço de Custo (opcional)"]) : undefined,
-          })).filter(item => item.name && item.unit);
+          })).filter((item: any) => item.name && item.unit);
 
           if (items.length === 0) {
             toast({ title: "Erro", description: "Nenhum item válido encontrado no Excel", variant: "destructive" });
@@ -179,7 +183,7 @@ export default function Inventory() {
                 Importar
               </span>
             </Button>
-            <input type="file" accept=".xlsx, .xls" className="hidden" onChange={handleFileUpload} />
+            <input type="file" accept=".xlsx, .xls, image/*" className="hidden" onChange={handleFileUpload} />
           </label>
           <Button variant="outline" size="sm" onClick={simulateOCR}>
             <Scan className="w-4 h-4 mr-2" />
