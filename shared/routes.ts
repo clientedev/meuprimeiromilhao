@@ -123,6 +123,25 @@ export const api = {
         200: z.object({ success: z.boolean(), count: z.number() }),
         400: errorSchemas.validation,
       }
+    },
+    scanNF: {
+      method: 'POST' as const,
+      path: '/api/ingredients/scan-nf',
+      input: z.object({
+        image: z.string(), // Base64 image
+      }),
+      responses: {
+        200: z.object({ 
+          success: z.boolean(), 
+          items: z.array(z.object({
+            name: z.string(),
+            unit: z.string(),
+            quantity: z.number(),
+            price: z.number().optional()
+          }))
+        }),
+        400: errorSchemas.validation,
+      }
     }
   },
   products: {

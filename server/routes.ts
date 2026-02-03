@@ -5,13 +5,15 @@ import { api } from "@shared/routes";
 import { z } from "zod";
 import session from "express-session";
 import MemoryStore from "memorystore";
+import { openai } from "@replit/ai-integrations";
 
-const SessionStore = MemoryStore(session);
+// ... rest of imports ...
 
 export async function registerRoutes(
   httpServer: Server,
   app: Express
 ): Promise<Server> {
+  // ... middleware setup ...
 
   // Setup session middleware
   app.use(
@@ -126,6 +128,36 @@ export async function registerRoutes(
       res.json({ success: true, count });
     } catch (err) {
       res.status(400).json({ message: "Erro na importação" });
+    }
+  });
+
+  app.post(api.ingredients.scanNF.path, requireAuth, async (req, res) => {
+    try {
+      const { image } = api.ingredients.scanNF.input.parse(req.body);
+      
+      const response = await openai.chat.completions.create({
+        model: "gpt-4o",
+        messages: [
+          {
+            role: "system",
+            content: "Você é um especialista em leitura de Notas Fiscais brasileiras. Extraia os itens da nota fiscal na imagem. Retorne APENAS um JSON válido no formato: { \"items\": [ { \"name\": \"string\", \"unit\": \"string\", \"quantity\": number, \"price\": number } ] }. Se não conseguir identificar, retorne um array vazio."
+          },
+          {
+            role: "user",
+            content: [
+              { type: "text", text: "Extraia os itens desta nota fiscal:" },
+              { type: "image_url", image_url: { url: image } }
+            ]
+          }
+        ],
+        response_format: { type: "json_object" }
+      });
+
+      const content = JSON.parse(response.choices[0].message.content || "{}");
+      res.json({ success: true, items: content.items || [] });
+    } catch (err) {
+      console.error("OCR Error:", err);
+      res.status(400).json({ message: "Erro ao processar nota fiscal" });
     }
   });
 

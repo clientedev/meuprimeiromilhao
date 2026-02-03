@@ -62,37 +62,57 @@ export default function Inventory() {
 
     setImporting(true);
     try {
-      const reader = new FileReader();
-      reader.onload = async (e) => {
-        const data = e.target?.result;
-        const workbook = XLSX.read(data, { type: "binary" });
-        const sheetName = workbook.SheetNames[0];
-        const worksheet = workbook.Sheets[sheetName];
-        const json = XLSX.utils.sheet_to_json(worksheet);
+      if (file.type.startsWith('image/')) {
+        // OCR Path
+        const reader = new FileReader();
+        reader.onload = async (e) => {
+          const base64 = e.target?.result as string;
+          const res = await apiRequest("POST", "/api/ingredients/scan-nf", { image: base64 });
+          const result = await res.json();
+          
+          if (result.success && result.items.length > 0) {
+            toast({ title: "NF Escaneada", description: `Detectados ${result.items.length} itens. Importando...` });
+            await apiRequest("POST", "/api/ingredients/import", { items: result.items });
+            queryClient.invalidateQueries({ queryKey: ["/api/ingredients"] });
+          } else {
+            toast({ title: "Aviso", description: "Não foi possível extrair itens da imagem", variant: "destructive" });
+          }
+        };
+        reader.readAsDataURL(file);
+      } else {
+        // Excel Path
+        const reader = new FileReader();
+        reader.onload = async (e) => {
+          const data = e.target?.result;
+          const workbook = XLSX.read(data, { type: "binary" });
+          const sheetName = workbook.SheetNames[0];
+          const worksheet = workbook.Sheets[sheetName];
+          const json = XLSX.utils.sheet_to_json(worksheet);
 
-        const items = json.map((row: any) => ({
-          name: row["Nome do Ingrediente"],
-          unit: row["Unidade (kg, L, un, etc)"],
-          quantity: Number(row["Quantidade em Estoque"]),
-          packageInfo: row["Informação da Embalagem (opcional)"],
-          minStock: row["Estoque Mínimo (opcional)"] ? Number(row["Estoque Mínimo (opcional)"]) : undefined,
-          currentPrice: row["Preço de Custo (opcional)"] ? Number(row["Preço de Custo (opcional)"]) : undefined,
-        })).filter(item => item.name && item.unit);
+          const items = json.map((row: any) => ({
+            name: row["Nome do Ingrediente"],
+            unit: row["Unidade (kg, L, un, etc)"],
+            quantity: Number(row["Quantidade em Estoque"]),
+            packageInfo: row["Informação da Embalagem (opcional)"],
+            minStock: row["Estoque Mínimo (opcional)"] ? Number(row["Estoque Mínimo (opcional)"]) : undefined,
+            currentPrice: row["Preço de Custo (opcional)"] ? Number(row["Preço de Custo (opcional)"]) : undefined,
+          })).filter(item => item.name && item.unit);
 
-        if (items.length === 0) {
-          toast({ title: "Erro", description: "Nenhum item válido encontrado no Excel", variant: "destructive" });
-          return;
-        }
+          if (items.length === 0) {
+            toast({ title: "Erro", description: "Nenhum item válido encontrado no Excel", variant: "destructive" });
+            return;
+          }
 
-        const res = await apiRequest("POST", "/api/ingredients/import", { items });
-        const result = await res.json();
-        
-        if (result.success) {
-          toast({ title: "Sucesso", description: `${result.count} itens importados com sucesso!` });
-          queryClient.invalidateQueries({ queryKey: ["/api/ingredients"] });
-        }
-      };
-      reader.readAsBinaryString(file);
+          const res = await apiRequest("POST", "/api/ingredients/import", { items });
+          const result = await res.json();
+          
+          if (result.success) {
+            toast({ title: "Sucesso", description: `${result.count} itens importados com sucesso!` });
+            queryClient.invalidateQueries({ queryKey: ["/api/ingredients"] });
+          }
+        };
+        reader.readAsBinaryString(file);
+      }
     } catch (error) {
       toast({ title: "Erro", description: "Falha ao processar arquivo", variant: "destructive" });
     } finally {
@@ -102,13 +122,11 @@ export default function Inventory() {
   };
 
   const simulateOCR = () => {
-    toast({ 
-      title: "Scanner de Nota Fiscal", 
-      description: "Esta funcionalidade requer integração com API de OCR. Simulando detecção...",
-    });
-    setTimeout(() => {
-      toast({ title: "Mock OCR", description: "Detectado: Farinha de Trigo 25kg, Preço: R$ 85,00" });
-    }, 2000);
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/*';
+    input.onchange = (e: any) => handleFileUpload(e);
+    input.click();
   };
 
   const formatQuantity = (qty: number, unit: string) => {
