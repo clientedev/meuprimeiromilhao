@@ -115,6 +115,20 @@ export async function registerRoutes(
     res.status(204).send();
   });
 
+  app.post(api.ingredients.importExcel.path, requireAuth, async (req, res) => {
+    try {
+      const { items } = api.ingredients.importExcel.input.parse(req.body);
+      let count = 0;
+      for (const item of items) {
+        await storage.createIngredient(req.session.tenantId!, item as any);
+        count++;
+      }
+      res.json({ success: true, count });
+    } catch (err) {
+      res.status(400).json({ message: "Erro na importação" });
+    }
+  });
+
   // === PRODUCTS ===
   app.get(api.products.list.path, requireAuth, async (req, res) => {
     const items = await storage.getProducts(req.session.tenantId!);

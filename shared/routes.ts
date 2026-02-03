@@ -106,6 +106,24 @@ export const api = {
         404: errorSchemas.notFound,
       },
     },
+    importExcel: {
+      method: 'POST' as const,
+      path: '/api/ingredients/import',
+      input: z.object({
+        items: z.array(z.object({
+          name: z.string(),
+          unit: z.string(),
+          quantity: z.number(),
+          packageInfo: z.string().optional(),
+          minStock: z.number().optional(),
+          currentPrice: z.number().optional()
+        }))
+      }),
+      responses: {
+        200: z.object({ success: z.boolean(), count: z.number() }),
+        400: errorSchemas.validation,
+      }
+    }
   },
   products: {
     list: {

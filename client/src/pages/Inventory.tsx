@@ -19,7 +19,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Search, PackageOpen, AlertTriangle, RefreshCcw, Trash2, Edit2 } from "lucide-react";
+import { Search, PackageOpen, AlertTriangle, RefreshCcw, Trash2, Edit2, Download, Upload, Loader2, Scan } from "lucide-react";
 import {
   Tabs,
   TabsContent,
@@ -28,11 +28,88 @@ import {
 } from "@/components/ui/tabs";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
+import * as XLSX from "xlsx";
+import { apiRequest, queryClient } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
 
 export default function Inventory() {
   const { data: ingredients, isLoading } = useIngredients();
   const [searchTerm, setSearchTerm] = useState("");
+  const [importing, setImporting] = useState(false);
   const deleteMutation = useDeleteIngredient();
+  const { toast } = useToast();
+
+  const downloadTemplate = () => {
+    const data = [
+      {
+        "Nome do Ingrediente": "Tomate",
+        "Unidade (kg, L, un, etc)": "kg",
+        "Quantidade em Estoque": 10,
+        "Informação da Embalagem (opcional)": "Caixa com 20kg",
+        "Estoque Mínimo (opcional)": 5,
+        "Preço de Custo (opcional)": 4.50
+      }
+    ];
+    const worksheet = XLSX.utils.json_to_sheet(data);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Modelo");
+    XLSX.writeFile(workbook, "modelo_estoque_vivo.xlsx");
+  };
+
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    setImporting(true);
+    try {
+      const reader = new FileReader();
+      reader.onload = async (e) => {
+        const data = e.target?.result;
+        const workbook = XLSX.read(data, { type: "binary" });
+        const sheetName = workbook.SheetNames[0];
+        const worksheet = workbook.Sheets[sheetName];
+        const json = XLSX.utils.sheet_to_json(worksheet);
+
+        const items = json.map((row: any) => ({
+          name: row["Nome do Ingrediente"],
+          unit: row["Unidade (kg, L, un, etc)"],
+          quantity: Number(row["Quantidade em Estoque"]),
+          packageInfo: row["Informação da Embalagem (opcional)"],
+          minStock: row["Estoque Mínimo (opcional)"] ? Number(row["Estoque Mínimo (opcional)"]) : undefined,
+          currentPrice: row["Preço de Custo (opcional)"] ? Number(row["Preço de Custo (opcional)"]) : undefined,
+        })).filter(item => item.name && item.unit);
+
+        if (items.length === 0) {
+          toast({ title: "Erro", description: "Nenhum item válido encontrado no Excel", variant: "destructive" });
+          return;
+        }
+
+        const res = await apiRequest("POST", "/api/ingredients/import", { items });
+        const result = await res.json();
+        
+        if (result.success) {
+          toast({ title: "Sucesso", description: `${result.count} itens importados com sucesso!` });
+          queryClient.invalidateQueries({ queryKey: ["/api/ingredients"] });
+        }
+      };
+      reader.readAsBinaryString(file);
+    } catch (error) {
+      toast({ title: "Erro", description: "Falha ao processar arquivo", variant: "destructive" });
+    } finally {
+      setImporting(false);
+      if (event.target) event.target.value = "";
+    }
+  };
+
+  const simulateOCR = () => {
+    toast({ 
+      title: "Scanner de Nota Fiscal", 
+      description: "Esta funcionalidade requer integração com API de OCR. Simulando detecção...",
+    });
+    setTimeout(() => {
+      toast({ title: "Mock OCR", description: "Detectado: Farinha de Trigo 25kg, Preço: R$ 85,00" });
+    }, 2000);
+  };
 
   const formatQuantity = (qty: number, unit: string) => {
     if (unit === "g" && qty >= 1000) return `${(qty / 1000).toFixed(2)}kg`;
@@ -72,7 +149,26 @@ export default function Inventory() {
           <h1 className="text-3xl font-display text-foreground">Estoque de Ingredientes</h1>
           <p className="text-muted-foreground mt-1">Gerencie seus insumos e níveis de estoque.</p>
         </div>
-        <IngredientForm />
+        <div className="flex flex-wrap gap-2">
+          <Button variant="outline" size="sm" onClick={downloadTemplate}>
+            <Download className="w-4 h-4 mr-2" />
+            Modelo Excel
+          </Button>
+          <label className="cursor-pointer">
+            <Button variant="outline" size="sm" asChild disabled={importing}>
+              <span>
+                {importing ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Upload className="w-4 h-4 mr-2" />}
+                Importar
+              </span>
+            </Button>
+            <input type="file" accept=".xlsx, .xls" className="hidden" onChange={handleFileUpload} />
+          </label>
+          <Button variant="outline" size="sm" onClick={simulateOCR}>
+            <Scan className="w-4 h-4 mr-2" />
+            Escanear NF
+          </Button>
+          <IngredientForm />
+        </div>
       </div>
 
       <div className="flex items-center gap-4 bg-card p-2 rounded-xl border shadow-sm max-w-md">
